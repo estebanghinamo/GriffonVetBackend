@@ -570,61 +570,8 @@ END$$
 
 DROP PROCEDURE IF EXISTS sp_login_usuario_json$$
 
-CREATE PROCEDURE sp_login_usuario_json(
-    IN p_json JSON,
-    OUT login_valido INT,
-    OUT rol VARCHAR(50),
-    OUT email_out VARCHAR(150),
-    OUT id_usuario INT
-)
+CREATE PROCEDURE sp_login_usuario_json(IN p_json JSON)
 BEGIN
-    DECLARE v_email VARCHAR(150);
-    DECLARE v_password VARCHAR(255);
-    DECLARE v_password_hash VARBINARY(64);
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        SET login_valido = 0;
-        SET rol = NULL;
-        SET email_out = NULL;
-        SET id_usuario = NULL;
-    END;
-
-    SET v_email = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.email'));
-    SET v_password = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.password'));
-
-    IF v_email IS NULL OR v_password IS NULL THEN
-        SET login_valido = 0;
-        SET rol = NULL;
-        SET email_out = NULL;
-        SET id_usuario = NULL;
-    ELSE
-        SET v_password_hash = UNHEX(SHA2(v_password, 256));
-
-        SELECT 
-            u.rol,
-            u.email,
-            u.id_usuario
-        INTO
-            rol,
-            email_out,
-            id_usuario
-        FROM usuarios u
-        WHERE u.email = v_email
-          AND u.password_hash = v_password_hash
-          AND u.activo = TRUE
-        LIMIT 1;
-
-        IF rol IS NOT NULL THEN
-            SET login_valido = 1;
-        ELSE
-            SET login_valido = 0;
-            SET rol = NULL;
-            SET email_out = NULL;
-            SET id_usuario = NULL;
-        END IF;
-    END IF;
-END$$
 
 
 DROP PROCEDURE IF EXISTS sp_activar_usuario$$

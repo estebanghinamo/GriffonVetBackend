@@ -21,33 +21,38 @@ class GriffonVetRepository
     // Usuarios
     // -------------------------------------------------------------------------
 
-    public function registrarUsuario(string $json): string
-    {
-        try {
-            $data = json_decode($json, true);
-            $rol  = $data['rol'] ?? 'CLIENTE';
+ public function registrarUsuario(string $json): string
+{
+    try {
+        $data = json_decode($json, true);
+        $rol  = $data['rol'] ?? 'CLIENTE';
 
-            if (strtoupper($rol) === 'CLIENTE') {
-                $token          = \Illuminate\Support\Str::uuid()->toString();
-                $data['token']  = $token;
-                $nuevoJson      = json_encode($data);
+        if (strtoupper($rol) === 'CLIENTE') {
+            $token          = \Illuminate\Support\Str::uuid()->toString();
+            $data['token']  = $token;
+            $nuevoJson      = json_encode($data);
 
-                $response = $this->sp->ejecutar('sp_registrar_usuario', ['json' => $nuevoJson]);
+            $response = $this->sp->ejecutar('sp_registrar_usuario', ['json' => $nuevoJson]);
 
-                if (str_contains($response, '"success":1')) {
-                    $this->enviarMailConfirmacion($data['email'], $token);
-                }
+            Log::info('[registrarUsuario] Response del SP: ' . $response);
 
-                return $response;
+            if (str_contains($response, '"success": 1')) {
+                Log::info('[registrarUsuario] Enviando mail a: ' . $data['email']);
+                $this->enviarMailConfirmacion($data['email'], $token);
+            } else {
+                Log::warning('[registrarUsuario] No se envió mail. El SP no retornó success:1');
             }
 
-            return $this->sp->ejecutar('sp_registrar_usuario', ['json' => $json]);
-
-        } catch (\Exception $e) {
-            return '{"success":0,"mensaje":"Error: ' . addslashes($e->getMessage()) . '"}';
+            return $response;
         }
-    }
 
+        return $this->sp->ejecutar('sp_registrar_usuario', ['json' => $json]);
+
+    } catch (\Exception $e) {
+        Log::error('[registrarUsuario] Excepción: ' . $e->getMessage());
+        return '{"success":0,"mensaje":"Error: ' . addslashes($e->getMessage()) . '"}';
+    }
+}
     public function login(string $json): array
     {
         try {
