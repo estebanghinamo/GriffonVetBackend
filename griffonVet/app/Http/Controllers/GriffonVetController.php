@@ -136,24 +136,34 @@ class GriffonVetController extends Controller
     // -------------------------------------------------------------------------
 
     public function insertarConsultaClinica(Request $request): Response
-    {
-        return $this->buildResponse(
-            $this->repo->insertarConsultaClinica(
-                $request->input('consulta'),
-                $request->file('archivos')
-            )
-        );
+{
+    // Normaliza: si es un solo archivo lo convierte en array
+    $archivos = $request->file('archivos');
+    if ($archivos instanceof \Illuminate\Http\UploadedFile) {
+        $archivos = [$archivos];
     }
 
+    return $this->buildResponse(
+        $this->repo->insertarConsultaClinica(
+            $request->input('consulta'),
+            $archivos
+        )
+    );
+}
     public function actualizarConsultaClinica(Request $request): Response
-    {
-        return $this->buildResponse(
-            $this->repo->actualizarConsultaClinica(
-                $request->input('consulta'),
-                $request->file('archivos')
-            )
-        );
+{
+    $archivos = $request->file('archivos');
+    if ($archivos instanceof \Illuminate\Http\UploadedFile) {
+        $archivos = [$archivos];
     }
+
+    return $this->buildResponse(
+        $this->repo->actualizarConsultaClinica(
+            $request->input('consulta'),
+            $archivos
+        )
+    );
+}
 
     public function eliminarConsulta(Request $request): Response
     {
