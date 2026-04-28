@@ -569,9 +569,44 @@ END$$
 
 
 DROP PROCEDURE IF EXISTS sp_login_usuario_json$$
-
 CREATE PROCEDURE sp_login_usuario_json(IN p_json JSON)
 BEGIN
+    DECLARE v_email        VARCHAR(150);
+    DECLARE v_password     VARCHAR(255);
+    DECLARE v_rol          VARCHAR(50)  DEFAULT NULL;
+    DECLARE v_email_out    VARCHAR(150) DEFAULT NULL;
+    DECLARE v_id_usuario   INT          DEFAULT NULL;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SELECT 0 AS login_valido, NULL AS rol, NULL AS email_out, NULL AS id_usuario;
+    END;
+
+    SET v_email    = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.email'));
+    SET v_password = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.password'));
+
+    IF v_email IS NULL OR v_password IS NULL THEN
+        SELECT 0 AS login_valido, NULL AS rol, NULL AS email_out, NULL AS id_usuario;
+    ELSE
+        SELECT u.rol, u.email, u.id_usuario
+        INTO   v_rol, v_email_out, v_id_usuario
+        FROM   usuarios u
+        WHERE  u.email         = v_email
+          AND  u.password_hash = UNHEX(SHA2(v_password, 256))
+          AND  u.activo        = TRUE
+        LIMIT 1;
+
+        IF v_rol IS NOT NULL THEN
+            SELECT 1          AS login_valido,
+                   v_rol      AS rol,
+                   v_email_out AS email_out,
+                   v_id_usuario AS id_usuario;
+        ELSE
+            SELECT 0 AS login_valido, NULL AS rol, NULL AS email_out, NULL AS id_usuario;
+        END IF;
+    END IF;
+END$$
+
 
 
 DROP PROCEDURE IF EXISTS sp_activar_usuario$$
@@ -3810,18 +3845,26 @@ BEGIN
     BEGIN
         ROLLBACK;
         SELECT JSON_OBJECT(
-            'success',0,
-            'mensaje','Error al crear información'
+            'success', 0,
+            'mensaje', 'Error al crear información'
         ) AS resultado;
     END;
 
     START TRANSACTION;
 
-    SET v_titulo = TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.titulo')));
-    SET v_descripcion = TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.descripcion')));
-    SET v_id_categoria = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.id_categoria')) AS UNSIGNED);
-    SET v_fecha_publicacion = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.fecha_publicacion')) AS DATETIME);
-    SET v_imagen_url = JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.imagen_url'));
+    SET v_titulo       = TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.titulo')));
+    SET v_descripcion  = TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.descripcion')));
+    SET v_id_categoria = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.id_categoria')) AS UNSIGNED);
+    SET v_imagen_url   = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.imagen_url'));
+
+    -- ← Fix: manejo seguro de fecha opcional
+    SET v_fecha_publicacion = IF(
+        JSON_EXTRACT(p_json, '$.fecha_publicacion') IS NULL
+        OR JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.fecha_publicacion')) = 'null'
+        OR TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.fecha_publicacion'))) = '',
+        NULL,
+        CAST(JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.fecha_publicacion')) AS DATETIME)
+    );
 
     IF v_titulo IS NULL OR v_titulo = ''
        OR v_descripcion IS NULL OR v_descripcion = ''
@@ -3838,47 +3881,38 @@ BEGIN
     END IF;
 
     INSERT INTO informacion_home(
-        titulo,
-        descripcion,
-        id_categoria,
-        fecha_publicacion,
-        imagen_url,
-        activo
+        titulo, descripcion, id_categoria,
+        fecha_publicacion, imagen_url, activo
     )
     VALUES(
-        v_titulo,
-        v_descripcion,
-        v_id_categoria,
-        v_fecha_publicacion,
-        v_imagen_url,
-        TRUE
+        v_titulo, v_descripcion, v_id_categoria,
+        v_fecha_publicacion, v_imagen_url, TRUE
     );
 
     SET v_id_informacion = LAST_INSERT_ID();
-
     COMMIT;
 
     SELECT JSON_OBJECT(
-        'success',1,
-        'mensaje','Información creada correctamente',
-        'informacion',
-        (
+        'success', 1,
+        'mensaje', 'Información creada correctamente',
+        'informacion', (
             SELECT JSON_OBJECT(
-                'id_informacion',ih.id_informacion,
-                'titulo',ih.titulo,
-                'descripcion',ih.descripcion,
-                'id_categoria',ih.id_categoria,
-                'categoria',c.nombre,
-                'fecha_publicacion',ih.fecha_publicacion,
-                'imagen_url',ih.imagen_url
+                'id_informacion', ih.id_informacion,
+                'titulo',         ih.titulo,
+                'descripcion',    ih.descripcion,
+                'id_categoria',   ih.id_categoria,
+                'categoria',      c.nombre,
+                'fecha_publicacion', ih.fecha_publicacion,
+                'imagen_url',     ih.imagen_url
             )
             FROM informacion_home ih
-            INNER JOIN categorias c
-                ON c.id_categoria = ih.id_categoria
+            INNER JOIN categorias c ON c.id_categoria = ih.id_categoria
             WHERE ih.id_informacion = v_id_informacion
         )
     ) AS resultado;
 END$$
+
+
 
 
 DROP PROCEDURE IF EXISTS sp_update_informacion_home_json$$
