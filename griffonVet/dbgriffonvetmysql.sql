@@ -3906,7 +3906,13 @@ BEGIN
     SET v_titulo = TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.titulo')));
     SET v_descripcion = TRIM(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.descripcion')));
     SET v_id_categoria = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.id_categoria')) AS UNSIGNED);
-    SET v_fecha_publicacion = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.fecha_publicacion')) AS DATETIME);
+    SET @fecha_str = JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.fecha_publicacion'));
+
+SET v_fecha_publicacion = 
+    CASE 
+        WHEN @fecha_str IS NULL OR @fecha_str = '' THEN NULL
+        ELSE CAST(@fecha_str AS DATETIME)
+    END;
     SET v_imagen_url = JSON_UNQUOTE(JSON_EXTRACT(p_json,'$.imagen_url'));
 
     IF v_id_informacion IS NULL THEN

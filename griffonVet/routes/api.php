@@ -31,7 +31,7 @@ Route::prefix('griffonVet')->middleware(JwtMiddleware::class)->group(function ()
     Route::get('/usuario/obtenerMascotas',              [GriffonVetController::class, 'obtenerMascotasPorUsuario']);
     // Consultas clínicas
     Route::post('/nuevaConsulta',               [GriffonVetController::class, 'insertarConsultaClinica']);
-    Route::put('/ActualizarConsultaClinica',    [GriffonVetController::class, 'actualizarConsultaClinica']);
+    Route::post('/ActualizarConsultaClinica',   [GriffonVetController::class, 'actualizarConsultaClinica']);
     Route::delete('/EliminarConsulta',          [GriffonVetController::class, 'eliminarConsulta']);
 
     // Categorías
@@ -40,7 +40,7 @@ Route::prefix('griffonVet')->middleware(JwtMiddleware::class)->group(function ()
 
     // Productos
     Route::post('/insertarProductos',   [GriffonVetController::class, 'insertarProducto']);
-    Route::put('/actualizarProductos',  [GriffonVetController::class, 'actualizarProducto']);
+    Route::post('/actualizarProductos',  [GriffonVetController::class, 'actualizarProducto']);
     Route::delete('/EliminarProducto',  [GriffonVetController::class, 'eliminarProducto']);
 
     // Medicamentos
@@ -79,7 +79,7 @@ Route::prefix('griffonVet')->middleware(JwtMiddleware::class)->group(function ()
     // Home
    
     Route::post('/InsertarInfoHome',    [GriffonVetController::class, 'insertarInfoHome']);
-    Route::put('/ActualizarInfoHome',   [GriffonVetController::class, 'actualizarInfoHome']);
+    Route::post('/ActualizarInfoHome',   [GriffonVetController::class, 'actualizarInfoHome']);
     Route::delete('/EliminarInfoHome',  [GriffonVetController::class, 'eliminarInfoHome']);
 
     // Dashboard
