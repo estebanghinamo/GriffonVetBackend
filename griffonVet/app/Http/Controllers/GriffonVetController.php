@@ -46,6 +46,20 @@ class GriffonVetController extends Controller
         );
     }
 
+    public function recuperarPassword(Request $request): Response
+    {
+        return $this->buildResponse(
+            $this->repo->solicitarRecuperacionPassword($request->getContent())
+        );
+    }
+
+    public function resetearPassword(Request $request): Response
+    {
+        return $this->buildResponse(
+            $this->repo->resetearPassword($request->getContent())
+        );
+    }
+
     public function login(Request $request): JsonResponse
     {
         $result = $this->repo->login($request->getContent());

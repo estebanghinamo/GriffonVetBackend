@@ -82,6 +82,54 @@ class GriffonVetRepository
         return $this->sp->ejecutar('sp_activar_usuario', ['token' => $token]);
     }
 
+    public function solicitarRecuperacionPassword(string $json): string
+    {
+        try {
+            $response = $this->sp->ejecutar('sp_solicitar_recuperacion_password', ['json' => $json]);
+
+            $decoded = json_decode($response, true);
+
+            if (($decoded['success'] ?? 0) !== 1) {
+                return $response;
+            }
+
+            $token = $decoded['token'] ?? null;
+            if (!$token) {
+                return '{"success":0,"mensaje":"No se pudo generar el token"}';
+            }
+
+            $data  = json_decode($json, true);
+            $email = $data['email'] ?? '';
+            $link  = config('app.frontend_url') . '/reset-password?token=' . $token;
+
+            Mail::raw(
+                "Recibiste este email porque solicitaste recuperar tu contraseña.\n\n" .
+                "Hacé click en el siguiente link para restablecerla:\n" . $link . "\n\n" .
+                "Si no realizaste esta solicitud, ignorá este mensaje.",
+                function ($msg) use ($email) {
+                    $msg->to($email)->subject('Recuperar contraseña GriffonVet');
+                }
+            );
+
+            Log::info('[solicitarRecuperacionPassword] Email enviado a: ' . $email);
+            return '{"success":1,"mensaje":"Email enviado"}';
+
+        } catch (\Exception $e) {
+            Log::error('[solicitarRecuperacionPassword] Excepción: ' . $e->getMessage());
+            return '{"success":0,"mensaje":"Error: ' . addslashes($e->getMessage()) . '"}';
+        }
+    }
+
+    public function resetearPassword(string $json): string
+    {
+        try {
+            return $this->sp->ejecutar('sp_resetear_password', ['json' => $json]);
+        } catch (\Exception $e) {
+            Log::error('[resetearPassword] Excepción: ' . $e->getMessage());
+            return '{"success":0,"mensaje":"Error: ' . addslashes($e->getMessage()) . '"}';
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Clientes y mascotas
     // -------------------------------------------------------------------------

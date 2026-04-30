@@ -9,6 +9,8 @@ Route::prefix('griffonVet')->group(function () {
     Route::post('/login',               [GriffonVetController::class, 'login']);
     Route::post('/usuarios/registro',   [GriffonVetController::class, 'registrarUsuario']);
     Route::get('/usuarios/activar',     [GriffonVetController::class, 'activarUsuario']);
+    Route::post('/recuperar-password',  [GriffonVetController::class, 'recuperarPassword']);
+    Route::post('/resetear-password',   [GriffonVetController::class, 'resetearPassword']);
     Route::get('/ObtenerNoticias',      [GriffonVetController::class, 'obtenerNoticias']);
     Route::get('/ObtenerEspecies',      [GriffonVetController::class, 'obtenerEspecies']);
     Route::get('/ObtenerServicios',     [GriffonVetController::class, 'obtenerServicios']);
